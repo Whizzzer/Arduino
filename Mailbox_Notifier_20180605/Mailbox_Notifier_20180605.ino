@@ -61,37 +61,37 @@ void presentation()
   present(PRIMARY_CHILD_ID, S_DOOR);
   present(SECONDARY_CHILD_ID, S_DOOR);
   // Send the sketch version information to the gateway and Controller
-  sendSketchInfo("Mailbox Alert", "1.0");
+  sendSketchInfo("Mailbox Oprit", "1.1");
 }
 
 // Loop will iterate on changes on the BUTTON_PINs
 void loop()
 {
   uint8_t value;
-  static uint8_t sentValue = 2;
-  static uint8_t sentValue2 = 2;
+  static uint8_t oldValue = 2;
+  static uint8_t oldValue2 = 2;
 
   // Short delay to allow buttons to properly settle
   sleep(5);
 
   value = digitalRead(MAILBOX_TOP_PIN);
 
-  if (value != sentValue)
+  if (value != oldValue)
   {
     post = true;
     //Serial.println("---------- New Mail");
     resend(msg.set(value==HIGH ? 1 : 0),repeat);
-    sentValue = value;
+    oldValue = value;
   }
 
   value = digitalRead(MAILBOX_DOOR_PIN);
   
-  if (value != sentValue2)
+  if (value != oldValue2)
   {
     post = false;
     //Serial.println("---------- Mailbox emptied");
     resend(msg2.set(value==HIGH ? 1 : 0),repeat);
-    sentValue2 = value;
+    oldValue2 = value;
   }
   
   if (post != lastpost)

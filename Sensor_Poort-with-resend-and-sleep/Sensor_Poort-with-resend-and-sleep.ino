@@ -16,12 +16,13 @@
 #define CHILD_ID 3
 #define BUTTON_PIN  3  // Arduino Digital I/O pin for button/reed switch
 #define VCC_MIN 2.8
-#define VCC_MAX 3.3
+#define VCC_MAX 3.7
 
 uint32_t SLEEP_TIME = 900000; //in msec, so 15 minutes
 
 int oldValue=-1;
 int value=-1;
+int repeat = 20;
 
 MyMessage msg(CHILD_ID,V_TRIPPED);
 
@@ -40,7 +41,7 @@ void receiveTime(unsigned long time)
   Serial.println(time);
 }
 
-void sendBatteryReport()
+void sendBattery()
 {
   float p = vcc.Read_Perc(VCC_MIN, VCC_MAX, true);
   float voltage = vcc.Read_Volts() ;
@@ -53,13 +54,19 @@ void sendBatteryReport()
 void resend(MyMessage &msg, int repeats) // Resend messages if not received by GW
 {
   int repeat = 1;
-  int repeatDelay = 0;
+  int repeatdelay = 0;
+  boolean sendOK = false;
 
-  while ((!send(msg)) and (repeat < repeats)) {
-      repeatDelay += 250;
-      repeat++;
-      delay(repeatDelay);
-    }    
+  while ((sendOK == false) and (repeat < repeats)) {
+    if (send(msg)) {
+      sendOK = true;
+    } else {
+      sendOK = false;
+      Serial.print("Send ERROR ");
+      Serial.println(repeat);
+      repeatdelay += 250;
+    } repeat++; delay(repeatdelay);
+  }
 }
 
 //  Check if digital input has changed and send in new value
@@ -75,14 +82,14 @@ void loop()
   
   if (value != oldValue) {
      // Send in the new value
-     resend(msg.set(value==HIGH ? 1 : 0), 5);
-     sendBatteryReport();
+     resend(msg.set(value==HIGH ? 1 : 0),repeat);
+     sendBattery();
      oldValue = value;
      delay(500);
   }
   sleep(BUTTON_PIN-2, CHANGE, SLEEP_TIME);
-  resend(msg.set(value==HIGH ? 1 : 0), 5);
-  sendBatteryReport();
+  resend(msg.set(value==HIGH ? 1 : 0),repeat);
+  sendBattery();
 }
 
 void setup()  
@@ -104,5 +111,5 @@ void presentation()
   // If S_LIGHT is used, remember to update variable type you send in. See "msg" above.
   present(CHILD_ID, S_DOOR);
   // Send the sketch version information to the gateway and Controller
-  sendSketchInfo("Oprit Poort", "1.3");  
+  sendSketchInfo("Oprit Poort", "1.4");  
 }
